@@ -17,18 +17,16 @@ import numpy as np
 from tokenizers import Tokenizer
 import os
 
-# --- НАСТРОЙКИ ---
-TXT_FILE = "val.txt"      # Твой гигантский склеенный файл
-BIN_FILE = "val.bin"      # Итоговый бинарник для модели
+TXT_FILE = "val.txt"     
+BIN_FILE = "val.bin"     
 TOKENIZER_PATH = "tokenizer.json" 
 
-print("📥 Загрузка токенизатора...")
+print("Загрузка токенизатора...")
 tokenizer = Tokenizer.from_file(TOKENIZER_PATH)
 eos_id = tokenizer.token_to_id("<|endoftext|>")
 
-print(f"🚀 Начинаем конвертацию {TXT_FILE} в бинарный формат...")
+print(f"Начинаем конвертацию {TXT_FILE} в бинарный формат...")
 
-# Открываем бинарник на запись
 with open(BIN_FILE, 'wb') as f_out:
     with open(TXT_FILE, 'r', encoding='utf-8') as f_in:
         batch_ids = []
@@ -38,12 +36,9 @@ with open(BIN_FILE, 'wb') as f_out:
             line = line.strip()
             if not line: continue
             
-            # Токенизируем строку и ОБЯЗАТЕЛЬНО ставим токен конца
-            # Так как мы склеивали абзацы/статьи, каждая строка в твоем txt - это скорее всего целый документ
             ids = tokenizer.encode(line).ids + [eos_id]
             batch_ids.extend(ids)
             
-            # Накопили 5 млн токенов — сбрасываем на диск, чтобы не взорвать ОЗУ
             if len(batch_ids) >= 9_000_000:
                 arr = np.array(batch_ids, dtype=np.uint16)
                 f_out.write(arr.tobytes())
@@ -51,7 +46,6 @@ with open(BIN_FILE, 'wb') as f_out:
                 batch_ids = []
                 print(f"✅ Обраработано строк: {i:,} | Сохранено токенов в .bin: {token_count:,}")
 
-        # Скидываем остатки
         if len(batch_ids) > 0:
             arr = np.array(batch_ids, dtype=np.uint16)
             f_out.write(arr.tobytes())
