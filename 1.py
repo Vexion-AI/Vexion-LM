@@ -24,9 +24,9 @@ checkpoint_path = "checkpoints/gpt_step_10000.safetensors"
 
 old_config = GPTConfig(
     vocab_size=OLD_VOCAB,
-    embed_dim=768,       # ЗАМЕНИ НА СВОЕ ЗНАЧЕНИЕ (Например, 384 или 768)
-    n_layers=12,         # ЗАМЕНИ НА СВОЕ ЗНАЧЕНИЕ
-    n_heads=12           # ЗАМЕНИ НА СВОЕ ЗНАЧЕНИЕ
+    embed_dim=768,       
+    n_layers=12,         
+    n_heads=12           
 )
 old_model = GPT(old_config)
 load_model(old_model, checkpoint_path)
