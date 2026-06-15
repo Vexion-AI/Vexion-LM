@@ -27,33 +27,27 @@ def generate(model, tokenizer, prompt, max_new_tokens=100, temperature=1.0, top_
     input_ids = torch.tensor(encoding.ids, dtype=torch.long, device=device).unsqueeze(0)
 
     prompt_length = input_ids.size(1)
-    past_key_values = None  # Инициализируем наш новый KV-кэш
+    past_key_values = None  
 
     with torch.no_grad():
-        # Умный выбор устройства для autocast, чтобы не падало на CPU
         autocast_device = 'cuda' if 'cuda' in device else 'cpu'
         with torch.amp.autocast(autocast_device, enabled=(autocast_device == 'cuda')):
             for _ in range(max_new_tokens):
                 
-                # Если кэш уже есть, скармливаем модели только один ПОСЛЕДНИЙ токен
                 if past_key_values is not None:
                     current_input = input_ids[:, -1:]
                 else:
                     current_input = input_ids
 
-                # Защита от переполнения контекста
                 if current_input.size(1) > model.config.max_seq_len:
                     current_input = current_input[:, -model.config.max_seq_len:]
                 
-                # Вызываем обновленную модель с use_cache=True
                 out = model(current_input, use_cache=True, past_key_values=past_key_values)
                 logits = out[0]
-                past_key_values = out[2] # Сохраняем обновленный кэш
+                past_key_values = out[2] 
                 
-                # Берем только последнее предсказание
                 logits = logits[:, -1, :].float() 
                 
-                # Штраф за повторения
                 if repetition_penalty != 1.0:
                     seen_tokens = torch.unique(input_ids)
                     score = logits[0, seen_tokens]
@@ -79,7 +73,6 @@ def generate(model, tokenizer, prompt, max_new_tokens=100, temperature=1.0, top_
                 next_token = torch.multinomial(probs, num_samples=1)
                 input_ids = torch.cat([input_ids, next_token], dim=-1)
 
-                # Умный стоп-кран
                 generated_tail_ids = input_ids[0, prompt_length:].tolist()
                 tail_text = tokenizer.decode(generated_tail_ids)
                 
@@ -109,15 +102,14 @@ if __name__ == "__main__":
 
     tokenizer = Tokenizer.from_file(args.tokenizer)
 
-    # ОБНОВЛЕННЫЙ КОНФИГ ДЛЯ VEXION-LM MINI
     config = GPTConfig(
-        vocab_size=40960,   # Новый размер словаря
+        vocab_size=40960,   
         embed_dim=768,      
         n_layers=12,        
         n_heads=12,         
         max_seq_len=1024,   
         dropout=0.0,
-        num_experts=4,      # Параметры новой архитектуры MoE
+        num_experts=4,      
         top_k=2
     )
     
